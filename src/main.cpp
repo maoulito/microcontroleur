@@ -4,6 +4,7 @@
  * 
 */
 
+
 /* INCLUDES */
 
 #include <pgmspace.h>
@@ -53,39 +54,40 @@ const __FlashStringHelper *ws_html_1() //Page html
   return F("<!DOCTYPE html>\n"
            "<html>\n"
            "<head>\n"
-           "<title>thermo</title>\n"
-           "<style>\n"
-           "body {\n"
-           "    background-color: #667;\n"
-           "}\n"
-           "table#tbl td {\n"
-           "    width: 64px;\n"
-           "    height: 64px;\n"
-           "    border: solid 1px grey;\n"
-           "    text-align: center;\n"
-           "}\n"
-           "</style>\n"
-           "</head>\n"
-           "<body>\n"
-           "<table border id=\"tbl\"></table>\n"
-           "<script>\n"
-           "function bgcolor(t) {\n"
-           "    if (t < 0) t = 0;\n"
-           "    if (t > 30) t = 30;\n"
-           "    return \"hsl(\" + (360 - t * 12) + \", 100%, 80%)\";\n"
-           "}\n"
-           "\n"
-           "var t = document.getElementById('tbl');\n"
-           "var tds = [];\n"
-           "for (var i = 0; i < 8; i++) {\n"
-           "    var tr = document.createElement('tr');\n"
-           "    for (var j = 0; j < 8; j++) {\n"
-           "        var td = tds[i*8 + 7 - j] = document.createElement('td');\n"
-           "        tr.appendChild(td);\n"
-           "    }\n"
-           "    t.appendChild(tr);\n"
-           "}\n"
-           "var connection = new WebSocket('ws://");
+           "<meta charset=\"UTF-8\">\n"
+             "<title>thermo</title>\n"
+             "<style>\n"
+             "body {\n"
+             "    background-color: #667;\n"
+             "}\n"
+             "table#tbl td {\n"
+             "    width: 64px;\n"
+             "    height: 64px;\n"
+             "    border: solid 1px grey;\n"
+             "    text-align: center;\n"
+             "}\n"
+             "</style>\n"
+             "</head>\n"
+             "<body>\n"
+             "<table border id=\"tbl\"></table>\n"
+             "<script>\n"
+             "function bgcolor(t) {\n"
+             "    if (t < 0) t = 0;\n"
+             "    if (t > 30) t = 30;\n"
+             "    return \"hsl(\" + (360 - t * 12) + \", 100%, 80%)\";\n"
+             "}\n"
+             "\n"
+             "var t = document.getElementById('tbl');\n"
+             "var tds = [];\n"
+             "for (var i = 0; i < 8; i++) {\n"
+             "    var tr = document.createElement('tr');\n"
+             "    for (var j = 0; j < 8; j++) {\n"
+             "        var td = tds[i*8 + 7 - j] = document.createElement('td');\n"
+             "        tr.appendChild(td);\n"
+             "    }\n"
+             "    t.appendChild(tr);\n"
+             "}\n"
+             "var connection = new WebSocket('ws://");
 }
 /* Pour maj du tableau dans la page web */
 
@@ -135,7 +137,7 @@ void handleRoot() // Quand le navgateur fait la requête prévue
 {
   auto ip = WiFi.localIP(); // atribution d'une addresse ip
   String addr_IP = String(ip[0]) + "." + ip[1] + "." + ip[2] + "." + ip[3]; // écriture de l'addresse ip de connexion sous un format lisible en html
-  server.send(200, "text/html", String(ws_html_1()) + addr_IP + ws_html_2()); //envoie le statu http 200 (ok) et les infos html au navigatuer
+  server.send(200, "text/html", String(ws_html_1()) + addr_IP + ws_html_2()); //envoie le statut http 200 (ok) et les infos html au navigatuer
 }
 
 void handleNotFound() 
@@ -205,7 +207,7 @@ void setup(void) //initialisation
 
   amg.begin(0x68); //position dans la pile
 
-  delay(10000); // pendant chauffe de la cam & pour voir l'affichage des init
+  delay(5000); // pendant chauffe de la cam & pour voir l'affichage des init
 }
 
 void loop(void) //main
