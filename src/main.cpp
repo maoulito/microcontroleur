@@ -1,5 +1,9 @@
-/* */
-// sudo chmod -R 777 /dev/ttyUSB0
+/* Pour pouvoir flasher le code il faut éditer les droits sur le port USB à chaque reémarrage du PC
+ *
+ * sudo chmod -R 777 /dev/ttyUSB0 
+ * 
+*/
+
 
 #include <pgmspace.h>
 #include <ESP8266WiFi.h>
@@ -16,29 +20,31 @@ Adafruit_AMG88xx amg;
 const char *ssid = "90Drogou"; //nom du wifi auquel se connecter
 const char *password = "Apoxes29"; //son mot de passe
 
-const int pin_led = D8;
+const int pin_led = D8; //led en D8
 
-ESP8266WebServer server(80);
-WebSocketsServer webSocket(81);
+ESP8266WebServer server(80); //Port 80
+WebSocketsServer webSocket(81); //Por 81
 
-String &get_current_values_str(String &ret)
+String &valeur_cam(String &ret)
 {
-  float pixels[AMG88xx_PIXEL_ARRAY_SIZE];
-  amg.readPixels(pixels);
-  ret = "[";
-  for (int i = 0; i < AMG88xx_PIXEL_ARRAY_SIZE; i++)
+  float tableau_pxls[AMG88xx_PIXEL_ARRAY_SIZE];      //déclaration d'un tableau qui contiendra les valeurs de températures par pixel
+  amg.readPixels(tableau_pxls);                      //lecture sur la camera
+  ret = "[";                                         //pour affichage
+  for (int i = 0; i < AMG88xx_PIXEL_ARRAY_SIZE; i++) //pour print le tableau  de manière compréhensible
   {
-    if (i % 8 == 0)
-      ret += "\r\n";
-    ret += pixels[i];
-    if (i != AMG88xx_PIXEL_ARRAY_SIZE - 1)
+    if (i % 8 == 0)  //tout les 8 pixels
+      ret += "\r\n"; // retour à la ligne
+    ret += tableau_pxls[i];
+    if (i != AMG88xx_PIXEL_ARRAY_SIZE - 1) // entre chaque valeur
       ret += ", ";
   }
-  ret += "\r\n]\r\n";
-  return ret;
+  ret += "\r\n]\r\n"; //en fin de tableau on le ferme et retour à la ligne
+  return ret;         //tableau complet et agencé
 }
 
-const __FlashStringHelper *ws_html_1()
+
+
+const __FlashStringHelper *ws_html_1() //Page html
 {
   return F("<!DOCTYPE html>\n"
            "<html>\n"
@@ -201,68 +207,67 @@ void WiFiEvent(WiFiEvent_t event)
   }
 }
 
-void setup(void)
+void setup(void) //initialisation
 {
-  pinMode(pin_led, OUTPUT);
-  Serial.begin(115200);
+  pinMode(pin_led, OUTPUT); //écriture
+  //Serial.begin(115200); //baud rate pour init du wifi
+  Serial.begin(9600);   //baud rate pour amg
 
   WiFi.mode(WIFI_STA);
   WiFi.onEvent(WiFiEvent);
-  WiFi.begin(ssid, password);
-  Serial.println("Start");
-  Serial.begin(9600); //baud rate
-  server.on("/", handleRoot);
+  WiFi.begin(ssid, password); 
+  
 
+  server.on("/", handleRoot);
   server.on("/current", []() {
     String str;
-    server.send(200, "text/plain", get_current_values_str(str));
+    server.send(200, "text/plain", valeur_cam(str)); //envoi des premières valeurs
   });
 
-  server.onNotFound(handleNotFound);
+  server.onNotFound(handleNotFound); //si erreurs wifi
 
   server.begin();
-
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
 
-  Serial.println("HTTP server started");
 
-  amg.begin(0x68);
-  delay(5000); // let sensor boot up
+  amg.begin(0x68); //position dans la pile
+
+  delay(10000); // pendant chauffe de la cam & pour voir l'affichage des init
 }
 
-void loop(void)
+void loop(void) //main
 {
   ArduinoOTA.handle();
   server.handleClient();
   webSocket.loop();
-  delay(5000);
+
 
   // Wait for connection
-  if (WiFi.status() != WL_CONNECTED)
+  if (WiFi.status() != WL_CONNECTED) //si perte de la connection wifi
   {
-    static unsigned long last_ms;
+    static unsigned long temps_avant;
     unsigned long t = millis();
-    if (t - last_ms > 500)
+    if (t - temps_avant > 500) //après 500ms
     {
-      Serial.print(".");
-      toggle();
-      last_ms = t;
+      Serial.print("."); // suite de points
+      toggle(); //clignotement led
+      temps_avant = t; //reset du temps d'attente
     }
   }
   else
   {
-    digitalWrite(pin_led, millis() % 3000 < 200);
+    digitalWrite(pin_led, millis() % 3000 < 200); // clignotement led long si tvb
   }
 
-  static unsigned long last_read_ms = millis();
+  static unsigned long temps_lecture_precedente = millis();
   unsigned long now = millis();
-  if (now - last_read_ms > 100)
+  if (now - temps_lecture_precedente > 100) //si pas de maj depuis 100ms
   {
-    last_read_ms += 100;
+    temps_lecture_precedente += 100;
     String str;
-    get_current_values_str(str);
-    Serial.println(str);
-    webSocket.broadcastTXT(str);
+    valeur_cam(str); //lecture des valeurs
+    Serial.println(str); //afichage des valeurs
+    webSocket.broadcastTXT(str); //envoie des valeurs au serveur
   }
 }
