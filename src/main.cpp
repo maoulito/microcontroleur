@@ -4,6 +4,7 @@
  * 
 */
 
+/* INCLUDES */
 
 #include <pgmspace.h>
 #include <ESP8266WiFi.h>
@@ -15,15 +16,19 @@
 #include <Wire.h>
 #include <Adafruit_AMG88xx.h>
 
+/* CONSTANTES */
+
 Adafruit_AMG88xx amg;
 
 const char *ssid = "90Drogou"; //nom du wifi auquel se connecter
 const char *password = "Apoxes29"; //son mot de passe
 
-const int pin_led = D8; //led en D8
+
 
 ESP8266WebServer server(80); //Port 80
-WebSocketsServer webSocket(81); //Por 81
+WebSocketsServer webSocket(81); //Port 81
+
+/* Lecture sur la camera -- Seule partie utile dans le cas du filaire ? */
 
 String &valeur_cam(String &ret)
 {
@@ -42,7 +47,7 @@ String &valeur_cam(String &ret)
   return ret;         //tableau complet et agencé
 }
 
-
+/* Pour Affichage web */
 
 const __FlashStringHelper *ws_html_1() //Page html
 {
@@ -83,6 +88,7 @@ const __FlashStringHelper *ws_html_1() //Page html
            "}\n"
            "var connection = new WebSocket('ws://");
 }
+/* Pour maj du tableau dans la page web */
 
 const __FlashStringHelper *ws_html_2()
 {
@@ -99,6 +105,13 @@ const __FlashStringHelper *ws_html_2()
            "</html>\n");
 }
 
+/* FONCTIONS */
+
+
+//  Fonction donnée dans la librairie 
+//  copiée collée ici et un peu nettoyée de ce qui ne servait pas.
+//  ref dans WebSocketServer.ino
+
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 {
   switch (type)
@@ -113,48 +126,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
   }
 }
 
-void enableOTA()
-{
-  // Port defaults to 8266
-  // ArduinoOTA.setPort(8266);
 
-  // Hostname defaults to esp8266-[ChipID]
-  // ArduinoOTA.setHostname("myesp8266");
-
-  // No authentication by default
-  // ArduinoOTA.setPassword((const char *)"123");
-
-  ArduinoOTA.onStart([]() {
-    Serial.println("Start");
-  });
-  ArduinoOTA.onEnd([]() {
-    Serial.println("\nEnd");
-  });
-  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-  });
-  ArduinoOTA.onError([](ota_error_t error) {
-    Serial.printf("Error[%u]: ", error);
-    if (error == OTA_AUTH_ERROR)
-      Serial.println("Auth Failed");
-    else if (error == OTA_BEGIN_ERROR)
-      Serial.println("Begin Failed");
-    else if (error == OTA_CONNECT_ERROR)
-      Serial.println("Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR)
-      Serial.println("Receive Failed");
-    else if (error == OTA_END_ERROR)
-      Serial.println("End Failed");
-  });
-  ArduinoOTA.begin();
-}
-
-void toggle()
-{
-  static bool last_led = false;
-  last_led = !last_led;
-  digitalWrite(pin_led, last_led);
-}
 
 void handleRoot()
 {
@@ -182,7 +154,7 @@ void handleNotFound()
 
 void WiFiEvent(WiFiEvent_t event)
 {
-  switch (event)
+  switch (event) //Lors d'un changement ou appel de la fonction
   {
 
   case WIFI_EVENT_STAMODE_DISCONNECTED:
@@ -197,12 +169,12 @@ void WiFiEvent(WiFiEvent_t event)
   case WIFI_EVENT_STAMODE_GOT_IP:
     digitalWrite(pin_led, HIGH);
     Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
+    Serial.println(WiFi.localIP()); //Affiche l'adresse à laquelle se connecter pour voir l'affichage
     if (MDNS.begin("esp8266-amg8833"))
     {
       Serial.println("MDNS responder started");
     }
-    enableOTA();
+    // enableOTA(); // si besin de l'OTA dans le futur
     break;
   }
 }
@@ -210,7 +182,6 @@ void WiFiEvent(WiFiEvent_t event)
 void setup(void) //initialisation
 {
   pinMode(pin_led, OUTPUT); //écriture
-  //Serial.begin(115200); //baud rate pour init du wifi
   Serial.begin(9600);   //baud rate pour amg
 
   WiFi.mode(WIFI_STA);
@@ -251,14 +222,10 @@ void loop(void) //main
     if (t - temps_avant > 500) //après 500ms
     {
       Serial.print("."); // suite de points
-      toggle(); //clignotement led
       temps_avant = t; //reset du temps d'attente
     }
   }
-  else
-  {
-    digitalWrite(pin_led, millis() % 3000 < 200); // clignotement led long si tvb
-  }
+  
 
   static unsigned long temps_lecture_precedente = millis();
   unsigned long now = millis();
@@ -271,3 +238,39 @@ void loop(void) //main
     webSocket.broadcastTXT(str); //envoie des valeurs au serveur
   }
 }
+
+
+/* POUR PLUS TARD */
+
+
+// Pour communiquer avec l'ESP depuis la page web
+// Ici affiche des information de débug en cas d'appel.
+// Semble nécessaire d'après la doc (OTA Updates) mais pour le moment fonctionne sans
+//Sera surement nécessaire pour envoyer des commandes depuis la page web.
+
+// void enableOTA()
+// {
+//   ArduinoOTA.onStart([]() {
+//     Serial.println("Start");
+//   });
+//   ArduinoOTA.onEnd([]() {
+//     Serial.println("\nEnd");
+//   });
+//   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+//     Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+//   });
+//   ArduinoOTA.onError([](ota_error_t error) {
+//     Serial.printf("Error[%u]: ", error);
+//     if (error == OTA_AUTH_ERROR)
+//       Serial.println("Auth Failed");
+//     else if (error == OTA_BEGIN_ERROR)
+//       Serial.println("Begin Failed");
+//     else if (error == OTA_CONNECT_ERROR)
+//       Serial.println("Connect Failed");
+//     else if (error == OTA_RECEIVE_ERROR)
+//       Serial.println("Receive Failed");
+//     else if (error == OTA_END_ERROR)
+//       Serial.println("End Failed");
+//   });
+//   ArduinoOTA.begin();
+// }
