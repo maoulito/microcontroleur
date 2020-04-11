@@ -4,7 +4,7 @@ Partie Microcontrôleur du projet M1 Camera Thermique
 Affichage d'une camera thermique sur un smartphone Android via Wifi.
 
 Composants : 
-  - ESP8866 nODEmcu 
+  - ESP8866 NodeMCU 
   - AMG883 (Melopero)
 
 Maël Le Bras - Jean Sandrin
