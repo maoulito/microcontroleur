@@ -10,5 +10,5 @@ Composants :
 Maël Le Bras - Jean Sandrin
 
 références : 
-https://www.gnipsel.com/esp8266/esp8266_01.html
-https://tttapa.github.io/ESP8266/Chap10%20-%20Simple%20Web%20Server.html
+  - https://www.gnipsel.com/esp8266/esp8266_01.html
+  - https://tttapa.github.io/ESP8266/Chap10%20-%20Simple%20Web%20Server.html
