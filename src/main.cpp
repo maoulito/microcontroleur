@@ -158,7 +158,6 @@ void WiFiEvent(WiFiEvent_t event)
   {
 
   case WIFI_EVENT_STAMODE_DISCONNECTED:
-    digitalWrite(pin_led, LOW);
     Serial.println("WiFi lost connection: reconnecting...");
     WiFi.begin();
     break;
@@ -167,7 +166,7 @@ void WiFiEvent(WiFiEvent_t event)
     Serial.println(ssid);
     break;
   case WIFI_EVENT_STAMODE_GOT_IP:
-    digitalWrite(pin_led, HIGH);
+    
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP()); //Affiche l'adresse à laquelle se connecter pour voir l'affichage
     if (MDNS.begin("esp8266-amg8833"))
@@ -181,7 +180,6 @@ void WiFiEvent(WiFiEvent_t event)
 
 void setup(void) //initialisation
 {
-  pinMode(pin_led, OUTPUT); //écriture
   Serial.begin(9600);   //baud rate pour amg
 
   WiFi.mode(WIFI_STA);
