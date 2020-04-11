@@ -233,7 +233,7 @@ void setup(void) //initialisation
 
   amg.begin(0x68); //position dans la pile
 
-  delay(5000); // pendant chauffe de la cam & pour voir l'affichage des init
+  delay(10000); // pendant chauffe de la cam & pour voir l'affichage des init
 }
 
 void loop(void) //main
@@ -241,7 +241,7 @@ void loop(void) //main
   ArduinoOTA.handle();
   server.handleClient();
   webSocket.loop();
-  //delay(1000); //entre chaque mise à jour -- voir jusqu'ou c'est diminuable
+
 
   // Wait for connection
   if (WiFi.status() != WL_CONNECTED) //si perte de la connection wifi
