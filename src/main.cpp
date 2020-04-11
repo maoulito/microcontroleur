@@ -16,6 +16,7 @@
 #include <Wire.h>
 #include <Adafruit_AMG88xx.h>
 
+
 /* CONSTANTES */
 
 Adafruit_AMG88xx amg;
@@ -23,28 +24,26 @@ Adafruit_AMG88xx amg;
 const char *ssid = "90Drogou"; //nom du wifi auquel se connecter
 const char *password = "Apoxes29"; //son mot de passe
 
-
-
-ESP8266WebServer server(80); //Port 80
-WebSocketsServer webSocket(81); //Port 81
+ESP8266WebServer server(80);    //crée un objet "serveur" qui écoute les requêtes HTTP sur le port 80
+WebSocketsServer webSocket(81); // 
 
 /* Lecture sur la camera -- Seule partie utile dans le cas du filaire ? */
 
-String &valeur_cam(String &ret)
+String &valeur_cam(String &tab)
 {
   float tableau_pxls[AMG88xx_PIXEL_ARRAY_SIZE];      //déclaration d'un tableau qui contiendra les valeurs de températures par pixel
   amg.readPixels(tableau_pxls);                      //lecture sur la camera
-  ret = "[";                                         //pour affichage
+  tab = "[";                                         //pour affichage
   for (int i = 0; i < AMG88xx_PIXEL_ARRAY_SIZE; i++) //pour print le tableau  de manière compréhensible
   {
     if (i % 8 == 0)  //tout les 8 pixels
-      ret += "\r\n"; // retour à la ligne
-    ret += tableau_pxls[i];
+      tab += "\r\n"; // retour à la ligne
+    tab += tableau_pxls[i];
     if (i != AMG88xx_PIXEL_ARRAY_SIZE - 1) // entre chaque valeur
-      ret += ", ";
+      tab += ", ";
   }
-  ret += "\r\n]\r\n"; //en fin de tableau on le ferme et retour à la ligne
-  return ret;         //tableau complet et agencé
+  tab += "\r\n]\r\n"; //en fin de tableau on le ferme et retour à la ligne
+  return tab;         //tableau complet et agencé
 }
 
 /* Pour Affichage web */
@@ -126,18 +125,22 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
   }
 }
 
+/*
+ * Voir les références pour les fonctions handleRoot & handleNotFound 
+ * 
+ * Fonction prototypes pour la gestion du http
+ */
 
-
-void handleRoot()
+void handleRoot() // Quand le navgateur fait la requête prévue
 {
-  auto ip = WiFi.localIP();
-  String ip_str = String(ip[0]) + "." + ip[1] + "." + ip[2] + "." + ip[3];
-  server.send(200, "text/html", String(ws_html_1()) + ip_str + ws_html_2());
+  auto ip = WiFi.localIP(); // atribution d'une addresse ip
+  String addr_IP = String(ip[0]) + "." + ip[1] + "." + ip[2] + "." + ip[3]; // écriture de l'addresse ip de connexion sous un format lisible en html
+  server.send(200, "text/html", String(ws_html_1()) + addr_IP + ws_html_2()); //envoie le statu http 200 (ok) et les infos html au navigatuer
 }
 
-void handleNotFound()
-{
-  String message = "File Not Found\n\n";
+void handleNotFound() 
+{// Quand le navigateur fait une requête imprévue, renvoie d'une erreur vulgarisée
+  String message = "File Not Found\n\n"; 
   message += "URI: ";
   message += server.uri();
   message += "\nMethod: ";
@@ -159,21 +162,22 @@ void WiFiEvent(WiFiEvent_t event)
 
   case WIFI_EVENT_STAMODE_DISCONNECTED:
     Serial.println("WiFi lost connection: reconnecting...");
-    WiFi.begin();
+    WiFi.begin(); // Si perte de connexion, re-init du wifi
     break;
+
   case WIFI_EVENT_STAMODE_CONNECTED:
     Serial.print("Connected to ");
-    Serial.println(ssid);
+    Serial.println(ssid); //Quand la connexion est établie, affichage du nom du Wifi
     break;
-  case WIFI_EVENT_STAMODE_GOT_IP:
-    
+
+  case WIFI_EVENT_STAMODE_GOT_IP:    
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP()); //Affiche l'adresse à laquelle se connecter pour voir l'affichage
     if (MDNS.begin("esp8266-amg8833"))
     {
       Serial.println("MDNS responder started");
     }
-    // enableOTA(); // si besin de l'OTA dans le futur
+    // enableOTA(); // si besoin de l'OTA dans le futur
     break;
   }
 }
@@ -186,15 +190,14 @@ void setup(void) //initialisation
   WiFi.onEvent(WiFiEvent);
   WiFi.begin(ssid, password); 
   
-
   server.on("/", handleRoot);
   server.on("/current", []() {
-    String str;
-    server.send(200, "text/plain", valeur_cam(str)); //envoi des premières valeurs
+    String pixels;
+    server.send(200, "text/plain", valeur_cam(pixels)); //envoi des premières valeurs
   });
 
-  server.onNotFound(handleNotFound); //si erreurs wifi
-
+  server.onNotFound(handleNotFound); //
+  
   server.begin();
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
@@ -207,7 +210,7 @@ void setup(void) //initialisation
 
 void loop(void) //main
 {
-  ArduinoOTA.handle();
+  // ArduinoOTA.handle();
   server.handleClient();
   webSocket.loop();
 
@@ -230,21 +233,24 @@ void loop(void) //main
   if (now - temps_lecture_precedente > 100) //si pas de maj depuis 100ms
   {
     temps_lecture_precedente += 100;
-    String str;
-    valeur_cam(str); //lecture des valeurs
-    Serial.println(str); //afichage des valeurs
-    webSocket.broadcastTXT(str); //envoie des valeurs au serveur
+    String pixels;
+    valeur_cam(pixels); //lecture des valeurs
+    Serial.println(pixels); //afichage des valeurs
+    webSocket.broadcastTXT(pixels); //envoie des valeurs au serveur
   }
 }
 
 
 /* POUR PLUS TARD */
 
-
-// Pour communiquer avec l'ESP depuis la page web
-// Ici affiche des information de débug en cas d'appel.
-// Semble nécessaire d'après la doc (OTA Updates) mais pour le moment fonctionne sans
-//Sera surement nécessaire pour envoyer des commandes depuis la page web.
+/*
+* Pour communiquer avec l'ESP depuis la page web
+* 
+* Semble nécessaire d'après la doc (OTA Updates) mais pour le moment fonctionne sans
+* Sera surement nécessaire pour envoyer des commandes depuis la page web.
+*
+* EDIT : permet de rafraîchir automatiquement la page lors d'un rémarrage forcé
+*/
 
 // void enableOTA()
 // {
