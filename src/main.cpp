@@ -1,4 +1,4 @@
-/* Pour pouvoir flasher le code il faut éditer les droits sur le port USB à chaque reémarrage du PC
+/* Pour pouvoir flasher le code il faut éditer les droits sur le port USB à chaque redémarrage du PC
  *
  * sudo chmod -R 777 /dev/ttyUSB0 
  * 
@@ -28,27 +28,28 @@ const char *password = "Apoxes29"; //son mot de passe
 ESP8266WebServer server(80);    //crée un objet "serveur" qui écoute les requêtes HTTP sur le port 80
 WebSocketsServer webSocket(81); // 
 
+const char *pxl ; // Pointeur qui va contenir les valeurs 
+
 /* Lecture sur la camera -- Seule partie utile dans le cas du filaire ? */
 
-String &valeur_cam(String &tab)
+char *valeur_cam()
 {
   float tableau_pxls[AMG88xx_PIXEL_ARRAY_SIZE];      //déclaration d'un tableau qui contiendra les valeurs de températures par pixel
   amg.readPixels(tableau_pxls);                      //lecture sur la camera
-  tab = "[";                                         //pour affichage
+  pxl = "[";                                         //pour affichage
   for (int i = 0; i < AMG88xx_PIXEL_ARRAY_SIZE; i++) //pour print le tableau  de manière compréhensible
   {
     if (i % 8 == 0)  //tout les 8 pixels
-      tab += "\r\n"; // retour à la ligne
-    tab += tableau_pxls[i];
+      pxl += "\r\n"; // retour à la ligne
+    pxl += tableau_pxls[i];
     if (i != AMG88xx_PIXEL_ARRAY_SIZE - 1) // entre chaque valeur
-      tab += ", ";
+      pxl += ", ";
   }
-  tab += "\r\n]\r\n"; //en fin de tableau on le ferme et retour à la ligne
+  pxl += "\r\n]\r\n"; //en fin de tableau on le ferme et retour à la ligne
   return tab;         //tableau complet et agencé
 }
 
 /* Pour Affichage web */
-
 const __FlashStringHelper *ws_html_1() //Page html
 {
   return F("<!DOCTYPE html>\n"
@@ -66,10 +67,14 @@ const __FlashStringHelper *ws_html_1() //Page html
              "    border: solid 1px grey;\n"
              "    text-align: center;\n"
              "}\n"
+             ".tablecenter{\n"
+             "  margin-left: auto \n"
+             "  margin-right: auto \n"
+             "}\n"
              "</style>\n"
              "</head>\n"
              "<body>\n"
-             "<table border id=\"tbl\"></table>\n"
+             "<table border id=\"tbl\" class=\"tablecenter\"></table>\n"
              "<script>\n"
              "function bgcolor(t) {\n"
              "    if (t < 0) t = 0;\n"
@@ -89,6 +94,7 @@ const __FlashStringHelper *ws_html_1() //Page html
              "}\n"
              "var connection = new WebSocket('ws://");
 }
+
 /* Pour maj du tableau dans la page web */
 
 const __FlashStringHelper *ws_html_2()
