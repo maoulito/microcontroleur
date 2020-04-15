@@ -28,25 +28,26 @@ const char *password = "Apoxes29"; //son mot de passe
 ESP8266WebServer server(80);    //crée un objet "serveur" qui écoute les requêtes HTTP sur le port 80
 WebSocketsServer webSocket(81); // 
 
-const char *pxl ; // Pointeur qui va contenir les valeurs 
+char *pxl[130] ; // Pointeur qui va contenir les valeurs 
+// taille 64 pxls + 64 virgules ou retours charriot + [] ?
 
 /* Lecture sur la camera -- Seule partie utile dans le cas du filaire ? */
 
-char *valeur_cam()
+void *valeur_cam()
 {
   float tableau_pxls[AMG88xx_PIXEL_ARRAY_SIZE];      //déclaration d'un tableau qui contiendra les valeurs de températures par pixel
   amg.readPixels(tableau_pxls);                      //lecture sur la camera
-  pxl = "[";                                         //pour affichage
+  // pxl[0] = "[";                                         //pour affichage
   for (int i = 0; i < AMG88xx_PIXEL_ARRAY_SIZE; i++) //pour print le tableau  de manière compréhensible
   {
-    if (i % 8 == 0)  //tout les 8 pixels
-      pxl += "\r\n"; // retour à la ligne
-    pxl += tableau_pxls[i];
-    if (i != AMG88xx_PIXEL_ARRAY_SIZE - 1) // entre chaque valeur
-      pxl += ", ";
+    // if(i % 8 == 0)  //tout les 8 pixels
+      // pxl[i] = "\r\n"; // retour à la ligne
+    sprintf(pxl[i],"%d", tableau_pxls[i]); // pas ça -- gcvt() ?
+    // if (i != AMG88xx_PIXEL_ARRAY_SIZE - 1) // entre chaque valeur
+      // pxl[i+1] = ", ";
   }
-  pxl += "\r\n]\r\n"; //en fin de tableau on le ferme et retour à la ligne
-  return tab;         //tableau complet et agencé
+  // pxl[sizeof(pxl)-1] = "\r\n]\r\n"; //en fin de tableau on le ferme et retour à la ligne
+  return *pxl;    //tableau complet et agencé
 }
 
 /* Pour Affichage web */
@@ -194,21 +195,20 @@ void setup(void) //initialisation
 {
   Serial.begin(9600);   //baud rate pour amg
 
-  WiFi.mode(WIFI_STA);
-  WiFi.onEvent(WiFiEvent);
-  WiFi.begin(ssid, password); 
+  // WiFi.mode(WIFI_STA);
+  // WiFi.onEvent(WiFiEvent);
+  // WiFi.begin(ssid, password); 
   
-  server.on("/", handleRoot);
-  server.on("/current", []() {
-    String pixels;
-    server.send(200, "text/plain", valeur_cam(pixels)); //envoi des premières valeurs
-  });
+  // server.on("/", handleRoot);
+  // server.on("/current", []() {
+  //   // server.send(200, "text/plain", *pxl); //envoi des premières valeurs
+  // });
 
-  server.onNotFound(handleNotFound); //
+  // server.onNotFound(handleNotFound); //
   
-  server.begin();
-  webSocket.begin();
-  webSocket.onEvent(webSocketEvent);
+  // server.begin();
+  // webSocket.begin();
+  // webSocket.onEvent(webSocketEvent);
 
 
   amg.begin(0x68); //position dans la pile
@@ -219,21 +219,22 @@ void setup(void) //initialisation
 void loop(void) //main
 {
   // ArduinoOTA.handle();
-  server.handleClient();
-  webSocket.loop();
+
+  // server.handleClient();
+  // webSocket.loop();
 
 
-  // Wait for connection
-  if (WiFi.status() != WL_CONNECTED) //si perte de la connection wifi
-  {
-    static unsigned long temps_avant;
-    unsigned long t = millis();
-    if (t - temps_avant > 500) //après 500ms
-    {
-      Serial.print("."); // suite de points
-      temps_avant = t; //reset du temps d'attente
-    }
-  }
+  // // Wait for connection
+  // if (WiFi.status() != WL_CONNECTED) //si perte de la connection wifi
+  // {
+  //   static unsigned long temps_avant;
+  //   unsigned long t = millis();
+  //   if (t - temps_avant > 500) //après 500ms
+  //   {
+  //     Serial.print("."); // suite de points
+  //     temps_avant = t; //reset du temps d'attente
+  //   }
+  // }
   
 
   static unsigned long temps_lecture_precedente = millis();
@@ -241,10 +242,10 @@ void loop(void) //main
   if (now - temps_lecture_precedente > 100) //si pas de maj depuis 100ms
   {
     temps_lecture_precedente += 100;
-    String pixels;
-    valeur_cam(pixels); //lecture des valeurs
-    Serial.println(pixels); //afichage des valeurs
-    webSocket.broadcastTXT(pixels); //envoie des valeurs au serveur
+    valeur_cam(); //lecture des valeurs
+    printf("lecture");
+    // printf("%s",*pxl);
+    // webSocket.broadcastTXT(*pxl); //envoie des valeurs au serveur
   }
 }
 
