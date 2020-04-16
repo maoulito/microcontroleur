@@ -6,6 +6,9 @@
 
 
 /* INCLUDES */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <pgmspace.h>
 #include <ESP8266WiFi.h>
@@ -33,22 +36,25 @@ char *pxl[130] ; // Pointeur qui va contenir les valeurs
 
 /* Lecture sur la camera -- Seule partie utile dans le cas du filaire ? */
 
-void *valeur_cam()
+void valeur_cam()
 {
   float tableau_pxls[AMG88xx_PIXEL_ARRAY_SIZE];      //déclaration d'un tableau qui contiendra les valeurs de températures par pixel
-  amg.readPixels(tableau_pxls);                      //lecture sur la camera
+  amg.readPixels(tableau_pxls); //lecture sur la camera
   // pxl[0] = "[";                                         //pour affichage
   for (int i = 0; i < AMG88xx_PIXEL_ARRAY_SIZE; i++) //pour print le tableau  de manière compréhensible
   {
     // if(i % 8 == 0)  //tout les 8 pixels
       // pxl[i] = "\r\n"; // retour à la ligne
-    sprintf(pxl[i],"%d", tableau_pxls[i]); // pas ça -- gcvt() ?
+
+    printf("%f,", tableau_pxls[i]); //affihce les valeurs lues séparées par une virgule
+    // sprintf(pxl[i],"%f",tableau_pxls[i]); //erreur en mémoire (Exception 28)
+
     // if (i != AMG88xx_PIXEL_ARRAY_SIZE - 1) // entre chaque valeur
       // pxl[i+1] = ", ";
   }
-  // pxl[sizeof(pxl)-1] = "\r\n]\r\n"; //en fin de tableau on le ferme et retour à la ligne
-  return *pxl;    //tableau complet et agencé
+     //tableau complet et agencé
 }
+
 
 /* Pour Affichage web */
 const __FlashStringHelper *ws_html_1() //Page html
@@ -201,7 +207,8 @@ void setup(void) //initialisation
   
   // server.on("/", handleRoot);
   // server.on("/current", []() {
-  //   // server.send(200, "text/plain", *pxl); //envoi des premières valeurs
+  //   String str;
+  //   server.send(200, "text/plain", get_current_values_str(str)); //envoi des premières valeurs
   // });
 
   // server.onNotFound(handleNotFound); //
@@ -243,10 +250,14 @@ void loop(void) //main
   {
     temps_lecture_precedente += 100;
     valeur_cam(); //lecture des valeurs
-    printf("lecture");
-    // printf("%s",*pxl);
-    // webSocket.broadcastTXT(*pxl); //envoie des valeurs au serveur
-  }
+    // printf("lecture\n");
+    // printf("%s",pxl);
+  
+      // String str;
+      // get_current_values_str(str);
+      // // Serial.println(str);
+      // webSocket.broadcastTXT(str);
+    }
 }
 
 
