@@ -16,10 +16,6 @@
 #include <Wire.h>
 #include <Adafruit_AMG88xx.h>
 
-//oui
-//oui
-//oui
-//ou
 
 /* CONSTANTES */
 
