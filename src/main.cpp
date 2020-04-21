@@ -31,30 +31,52 @@ const char *password = "Apoxes29"; //son mot de passe
 ESP8266WebServer server(80);    //crée un objet "serveur" qui écoute les requêtes HTTP sur le port 80
 WebSocketsServer webSocket(81); // 
 
-char *pxl[130] ; // Pointeur qui va contenir les valeurs 
-// taille 64 pxls + 64 virgules ou retours charriot + [] ?
-
 /* Lecture sur la camera -- Seule partie utile dans le cas du filaire ? */
 
-void valeur_cam()
+float* valeur_cam(float *tableau_grandi)
 {
   float tableau_pxls[AMG88xx_PIXEL_ARRAY_SIZE];      //déclaration d'un tableau qui contiendra les valeurs de températures par pixel
-  amg.readPixels(tableau_pxls); //lecture sur la camera
-  // pxl[0] = "[";                                         //pour affichage
-  for (int i = 0; i < AMG88xx_PIXEL_ARRAY_SIZE; i++) //pour print le tableau  de manière compréhensible
+      amg.readPixels(tableau_pxls);               //lecture sur la camera                                         //pour affichage
+  for (int i = 0; i < AMG88xx_PIXEL_ARRAY_SIZE; i++) // i index du tableau originel
   {
-    // if(i % 8 == 0)  //tout les 8 pixels
-      // pxl[i] = "\r\n"; // retour à la ligne
+    for (int j = 0; j < 256; j++)
+    {
+    // cases noires
+     if (i==j)
+      tableau_grandi[j] = tableau_pxls[i];
 
-    printf("%f,", tableau_pxls[i]); //affihce les valeurs lues séparées par une virgule
-    // sprintf(pxl[i],"%f",tableau_pxls[i]); //erreur en mémoire (Exception 28)
+     // cases bleues
+      if (i%8!=0) //toutes sauf extérieures
+        tableau_grandi[j+1]=(tableau_pxls[i]+tableau_pxls[i+1])/2;
 
-    // if (i != AMG88xx_PIXEL_ARRAY_SIZE - 1) // entre chaque valeur
-      // pxl[i+1] = ", ";
+    // cases vertes
+      if ((i+8)<64) // sauf dernière ligne
+        tableau_grandi[j+8]=(tableau_pxls[i]+tableau_pxls[i+8])/2;
+    
+    // cases rouges
+      if (i%8==0 && (i+8)<64)// pas extérieur ni dernière ligne
+        tableau_grandi[j+9]=(tableau_pxls[i]+tableau_pxls[i+1]+tableau_pxls[i+8]+tableau_grandi[i+9])/4;
+    }
   }
-     //tableau complet et agencé
+  return tableau_grandi;
 }
 
+String &get_current_values_str(String &ret)
+{
+  float pixels[AMG88xx_PIXEL_ARRAY_SIZE];
+  amg.readPixels(pixels);
+  ret = "[";
+  for (int i = 0; i < AMG88xx_PIXEL_ARRAY_SIZE; i++)
+  {
+    if (i % 8 == 0)
+      ret += "\r\n";
+    ret += pixels[i];
+    if (i != AMG88xx_PIXEL_ARRAY_SIZE - 1)
+      ret += ", ";
+  }
+  ret += "\r\n]\r\n";
+  return ret;
+}
 
 /* Pour Affichage web */
 const __FlashStringHelper *ws_html_1() //Page html
@@ -201,21 +223,21 @@ void setup(void) //initialisation
 {
   Serial.begin(9600);   //baud rate pour amg
 
-  // WiFi.mode(WIFI_STA);
-  // WiFi.onEvent(WiFiEvent);
-  // WiFi.begin(ssid, password); 
+  WiFi.mode(WIFI_STA);
+  WiFi.onEvent(WiFiEvent);
+  WiFi.begin(ssid, password); 
   
-  // server.on("/", handleRoot);
-  // server.on("/current", []() {
-  //   String str;
-  //   server.send(200, "text/plain", get_current_values_str(str)); //envoi des premières valeurs
-  // });
+  server.on("/", handleRoot);
+  server.on("/current", []() {
+    String str;
+    server.send(200, "text/plain", get_current_values_str(str)); //envoi des premières valeurs
+  });
 
-  // server.onNotFound(handleNotFound); //
+  server.onNotFound(handleNotFound); //
   
-  // server.begin();
-  // webSocket.begin();
-  // webSocket.onEvent(webSocketEvent);
+  server.begin();
+  webSocket.begin();
+  webSocket.onEvent(webSocketEvent);
 
 
   amg.begin(0x68); //position dans la pile
@@ -227,37 +249,43 @@ void loop(void) //main
 {
   // ArduinoOTA.handle();
 
-  // server.handleClient();
-  // webSocket.loop();
+  server.handleClient();
+  webSocket.loop();
 
 
-  // // Wait for connection
-  // if (WiFi.status() != WL_CONNECTED) //si perte de la connection wifi
-  // {
-  //   static unsigned long temps_avant;
-  //   unsigned long t = millis();
-  //   if (t - temps_avant > 500) //après 500ms
-  //   {
-  //     Serial.print("."); // suite de points
-  //     temps_avant = t; //reset du temps d'attente
-  //   }
-  // }
-  
+  // Wait for connection
+  if (WiFi.status() != WL_CONNECTED) //si perte de la connection wifi
+  {
+    static unsigned long temps_avant;
+    unsigned long t = millis();
+    if (t - temps_avant > 500) //après 500ms
+    {
+      Serial.print("."); // suite de points
+      temps_avant = t; //reset du temps d'attente
+    }
+  }
+
 
   static unsigned long temps_lecture_precedente = millis();
   unsigned long now = millis();
   if (now - temps_lecture_precedente > 100) //si pas de maj depuis 100ms
   {
     temps_lecture_precedente += 100;
-    valeur_cam(); //lecture des valeurs
-    // printf("lecture\n");
-    // printf("%s",pxl);
-  
-      // String str;
-      // get_current_values_str(str);
-      // // Serial.println(str);
-      // webSocket.broadcastTXT(str);
+    float tableau_grandi [256] ; //malloc(256); 
+    valeur_cam(tableau_grandi); //lecture des valeurs
+    for (int i = 0; i < 128; i++)
+      printf("%lf,",tableau_grandi[i]);
+    
+    printf("\nnext\n");
+
+    String str;
+    get_current_values_str(str);
+    printf("Valeur_serv\n");
+      Serial.println(str);
+      printf("\n");
+      webSocket.broadcastTXT(str);
     }
+    
 }
 
 
