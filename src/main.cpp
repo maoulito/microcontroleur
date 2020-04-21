@@ -72,7 +72,7 @@ const __FlashStringHelper *ws_html_1() //Page html
            "function bgcolor(t) {\n"
            "    if (t < 0) t = 0;\n"
            "    if (t > 30) t = 30;\n"
-           "    return \"hsl(\" + (360 - t * 12) + \", 100%, 80%)\";\n"
+           "    return \"hsl(\" + (360 - t * 12) + \", 100%, 50%)\";\n"
            "}\n"
            "\n"
            "var t = document.getElementById('tbl');\n"
