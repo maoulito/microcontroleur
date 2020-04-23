@@ -76,8 +76,8 @@ const __FlashStringHelper *ws_html_1() //Page html
            "    background-color: #667;\n"
            "}\n"
            "table#tbl td {\n"
-           "    width: 64px;\n"
-           "    height: 64px;\n"
+           "    width: 32px;\n"
+           "    height: 32px;\n"
            "    border: solid 1px grey;\n"
            "    text-align: center;\n"
            "}\n"
@@ -93,15 +93,15 @@ const __FlashStringHelper *ws_html_1() //Page html
            "function bgcolor(t) {\n"
            "    if (t < 0) t = 0;\n"
            "    if (t > 30) t = 30;\n"
-           "    return \"hsl(\" + (360 - t * 12) + \", 100%, 80%)\";\n"
+           "    return \"hsl(\" + (360 - t * 12) + \", 100%, 50%)\";\n"
            "}\n"
            "\n"
            "var t = document.getElementById('tbl');\n"
            "var tds = [];\n"
-           "for (var i = 0; i < 8; i++) {\n"
+           "for (var i = 0; i < 15; i++) {\n"
            "    var tr = document.createElement('tr');\n"
-           "    for (var j = 0; j < 8; j++) {\n"
-           "        var td = tds[i*8 + 7 - j] = document.createElement('td');\n"
+           "    for (var j = 0; j < 15; j++) {\n"
+           "        var td = tds[i*15 + 14 - j] = document.createElement('td');\n"
            "        tr.appendChild(td);\n"
            "    }\n"
            "    t.appendChild(tr);\n"
@@ -116,7 +116,7 @@ const __FlashStringHelper *ws_html_2()
   return F(":81/');\n"
            "connection.onmessage = function(e) {\n"
            "    const data = JSON.parse(e.data);\n"
-           "    for (var i = 0; i < 64; i++) {\n"
+           "    for (var i = 0; i < 225; i++) {\n"
            "        tds[i].innerHTML = data[i].toFixed(2);\n"
            "        tds[i].style.backgroundColor = bgcolor(data[i]);\n"
            "    }\n"
@@ -249,33 +249,30 @@ void loop(void) //main
       temps_avant = t;   //reset du temps d'attente
     }
   }
-  String str;
-  get_current_values_str(str);
-  printf("Valeur_serv\n");
-  Serial.println(str);
-  printf("\n");
+  
 
   // lecture images
   amg.readPixels(tableau_pixels);
 
-      // Pour interpoler 2 valeurs entre chaque pixels donnés par la caméra
-      // Il faut créer 70 colonnes supplémentaires
+      // Pour interpoler 1 valeur entre chaque pixels donnés par la caméra
+      // Il faut créer 7 colonnes supplémentaires
 
       //interpolation lignes
       // interpolation des points entre chaque pixel-image sur les lignes
-  for (ligne = 0; ligne < 15; ligne++)
+  for (ligne = 0; ligne < 8; ligne++)
   {
     for (col = 0; col < 15; col++)
     {
       // récupère les pixels-image adjacents
-      av = col/2 + (ligne * 8);       // 10 entre chacun des huit
+      av = col/2 + (ligne * 8);       // 2 entre chacun des huit
       ap = (col/2) + 1 + (ligne * 8); // point suivant
       pixelMilieu = ((tableau_pixels[ap] - tableau_pixels[av]) / 2.0);
       // incrément (0-1)
       incr = col % 2;
       // Calcul de l'interpolation linéaire
-      val = (pixelMilieu * incr) + tableau_pixels[av];
-      tableau_grandi[ligne][col] = val;
+      val = (pixelMilieu  * incr) + tableau_pixels[av];
+      // tableau_grandi[ligne][col] = val;
+      tableau_grandi[(7 - ligne) * 2][col] = val;
     }
   }
 
@@ -311,18 +308,17 @@ void loop(void) //main
   }
   interpolation += "\r\n]\r\n";
   
-  Serial.println(interpolation);
+  
   static unsigned long temps_lecture_precedente = millis();
   unsigned long now = millis();
   if (now - temps_lecture_precedente > 100) //si pas de maj depuis 100ms
   {
     temps_lecture_precedente += 100;
-    String str;
-    get_current_values_str(str);
-    // printf("Valeur_serv\n");
-    // Serial.println(str);
-    // printf("\n");
-    webSocket.broadcastTXT(str);
+    // String str;
+    // get_current_values_str(str);
+    // webSocket.broadcastTXT(str);
+    // Serial.println(interpolation);
+    webSocket.broadcastTXT(interpolation);
   }
 }
 
