@@ -46,68 +46,6 @@ WebSocketsServer webSocket(81); //
 
 
 
-// void InterpoLigne()
-// {
-
-//   // interpolation des points entre chaque pixel-image sur les lignes
-//   for (ligne = 0; ligne < 8; ligne++)
-//   {
-//     for (col = 0; col < 70; col++)
-//     {
-//       // récupère les pixels-image adjacents
-//       av = col / 10 + (ligne * 8); // 10 entre chacun des huit
-//       ap = (col / 10) + 1 + (ligne * 8); // point suivant
-//       pixelPolé = ((tableau_pixels[ap] - tableau_pixels[av]) / 10.0);
-//       // incrément (0-9)
-//       incr = col % 10;
-//       // Calcul de l'interpolation linaire
-//       val = (pixelPolé * incr) + tableau_pixels[av];
-//       tableau_grandi[ligne][col] = val;
-//     }
-//   }
-// }
-
-// // interplation function to interpolate 70 columns from the interpolated rows
-// void *InterCol()
-// {
-
-//   // then interpolate the 70 rows between the 8 sensor points
-//   for (col = 0; col < 70; col++)
-//   {
-//     for (ligne = 0; ligne < 70; ligne++)
-//     {
-//       // récuère les pixels-image adjacents
-//       // also need to bump by 8 for the subsequent cols
-//       av = (ligne / 10) * 10;
-//       ap = av + 10;
-//       // get the amount to interpolate for each of the 10 columns
-//       // here were doing simple linear interpolation mainly to keep performace high and
-//       // display is 5-6-5 color palet so fancy interpolation will get lost in low color depth
-//       pixelPolé = ((tableau_grandi[ap][col] - tableau_grandi[av][col]) / 10.0);
-//       // determine how much to bump each column (basically 0-9)
-//       incr = ligne % 10;
-//       // find the interpolated value
-//       val = (pixelPolé * incr) + tableau_grandi[av][col];
-//       // store in the 70 x 70 array
-//       tableau_grandi[ligne][col] = val;
-//     }
-//   }
-// }
-String deviens_string(float tableau_a_convertir)
-{
-  String interpolation;
-  interpolation = "[";
-  for (int i = 0; i < 70; i++)
-  {
-    if (i % 70 == 0)
-      interpolation += "\r\n";
-    interpolation += tableau_a_convertir[i];
-    if (i != AMG88xx_PIXEL_ARRAY_SIZE - 1)
-      interpolation += ", ";
-  }
-  interpolation += "\r\n]\r\n";
-  return interpolation;
-}
 String &get_current_values_str(String &ret)
 {
   float pixels[AMG88xx_PIXEL_ARRAY_SIZE];
@@ -311,45 +249,69 @@ void loop(void) //main
       temps_avant = t;   //reset du temps d'attente
     }
   }
+  String str;
+  get_current_values_str(str);
+  printf("Valeur_serv\n");
+  Serial.println(str);
+  printf("\n");
 
   // lecture images
   amg.readPixels(tableau_pixels);
-  // Pour interpoler 10 valeurs entre chaque pixels donnés par la caméra
-  // Il faut créer 70 colonnes supplémentaires
 
-  // interpolation des points entre chaque pixel-image sur les lignes
-  for (ligne = 0; ligne < 8; ligne++)
+      // Pour interpoler 2 valeurs entre chaque pixels donnés par la caméra
+      // Il faut créer 70 colonnes supplémentaires
+
+      //interpolation lignes
+      // interpolation des points entre chaque pixel-image sur les lignes
+  for (ligne = 0; ligne < 15; ligne++)
   {
-    for (col = 0; col < 70; col++)
+    for (col = 0; col < 15; col++)
     {
       // récupère les pixels-image adjacents
-      av = col / 10 + (ligne * 8);       // 10 entre chacun des huit
-      ap = (col / 10) + 1 + (ligne * 8); // point suivant
-      pixelMilieu = ((tableau_pixels[ap] - tableau_pixels[av]) / 10.0);
-      // incrément (0-9)
-      incr = col % 10;
-      // Calcul de l'interpolation linaire
+      av = col/2 + (ligne * 8);       // 10 entre chacun des huit
+      ap = (col/2) + 1 + (ligne * 8); // point suivant
+      pixelMilieu = ((tableau_pixels[ap] - tableau_pixels[av]) / 2.0);
+      // incrément (0-1)
+      incr = col % 2;
+      // Calcul de l'interpolation linéaire
       val = (pixelMilieu * incr) + tableau_pixels[av];
       tableau_grandi[ligne][col] = val;
     }
   }
 
-
+  //interpolation colonnes
   // et maintenant sur les colonnes en utilisant le tableau que l'on vient de remplir
-  for (col = 0; col < 70; col++)
+  for (col = 0; col < 15; col++)
   {
-    for (ligne = 0; ligne < 70; ligne++)
+    for (ligne = 0; ligne < 15 ; ligne++)
     {
       // récupère la position des pixels-image adjacents
-      av = (ligne / 10) * 10;
-      ap = av + 10;
-      pixelMilieu = ((tableau_grandi[ap][col] - tableau_grandi[av][col]) / 10.0);
-      incr = ligne % 10;
+      av = (ligne / 2) * 2;
+      ap = av + 2;
+      pixelMilieu = ((tableau_grandi[ap][col] - tableau_grandi[av][col]) / 2.0);
+      incr = ligne % 2;
       val = (pixelMilieu * incr) + tableau_grandi[av][col];
       tableau_grandi[ligne][col] = val;
     }
   }
+  //conversion string
+  String interpolation;
+  interpolation = "[";
+  for (int i = 0; i < 15; i++) //lignes
+  {
+    if(i!=0 || i!=14)
+      interpolation += "\r\n";
+    for (int j = 0 ; j<15 ; j++){ //colonnes
+        
+      interpolation += String(tableau_grandi[i][j]);
+
+      if (i!=14 || j!= 14) //sauf dernière valeur
+        interpolation += ", "; //entre chaque pixel
+    }
+  }
+  interpolation += "\r\n]\r\n";
   
+  Serial.println(interpolation);
   static unsigned long temps_lecture_precedente = millis();
   unsigned long now = millis();
   if (now - temps_lecture_precedente > 100) //si pas de maj depuis 100ms
@@ -357,9 +319,9 @@ void loop(void) //main
     temps_lecture_precedente += 100;
     String str;
     get_current_values_str(str);
-    printf("Valeur_serv\n");
-    Serial.println(str);
-    printf("\n");
+    // printf("Valeur_serv\n");
+    // Serial.println(str);
+    // printf("\n");
     webSocket.broadcastTXT(str);
   }
 }
