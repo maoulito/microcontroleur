@@ -46,23 +46,6 @@ WebSocketsServer webSocket(81); //
 
 
 
-String &get_current_values_str(String &ret)
-{
-  float pixels[AMG88xx_PIXEL_ARRAY_SIZE];
-  amg.readPixels(pixels);
-  ret = "[";
-  for (int i = 0; i < AMG88xx_PIXEL_ARRAY_SIZE; i++)
-  {
-    if (i % 8 == 0)
-      ret += "\r\n";
-    ret += pixels[i];
-    if (i != AMG88xx_PIXEL_ARRAY_SIZE - 1)
-      ret += ", ";
-  }
-  ret += "\r\n]\r\n";
-  return ret;
-}
-
 /* Pour Affichage web */
 const __FlashStringHelper *ws_html_1() //Page html
 {
@@ -314,48 +297,7 @@ void loop(void) //main
   if (now - temps_lecture_precedente > 100) //si pas de maj depuis 100ms
   {
     temps_lecture_precedente += 100;
-    // String str;
-    // get_current_values_str(str);
-    // webSocket.broadcastTXT(str);
-    // Serial.println(interpolation);
+
     webSocket.broadcastTXT(interpolation);
   }
 }
-
-/* POUR PLUS TARD */
-
-/*
-* Pour communiquer avec l'ESP depuis la page web
-* 
-* Semble nécessaire d'après la doc (OTA Updates) mais pour le moment fonctionne sans
-* Sera surement nécessaire pour envoyer des commandes depuis la page web.
-*
-* EDIT : permet de rafraîchir automatiquement la page lors d'un rémarrage forcé
-*/
-
-// void enableOTA()
-// {
-//   ArduinoOTA.onStart([]() {
-//     Serial.println("Start");
-//   });
-//   ArduinoOTA.onEnd([]() {
-//     Serial.println("\nEnd");
-//   });
-//   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-//     Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-//   });
-//   ArduinoOTA.onError([](ota_error_t error) {
-//     Serial.printf("Error[%u]: ", error);
-//     if (error == OTA_AUTH_ERROR)
-//       Serial.println("Auth Failed");
-//     else if (error == OTA_BEGIN_ERROR)
-//       Serial.println("Begin Failed");
-//     else if (error == OTA_CONNECT_ERROR)
-//       Serial.println("Connect Failed");
-//     else if (error == OTA_RECEIVE_ERROR)
-//       Serial.println("Receive Failed");
-//     else if (error == OTA_END_ERROR)
-//       Serial.println("End Failed");
-//   });
-//   ArduinoOTA.begin();
-// }
