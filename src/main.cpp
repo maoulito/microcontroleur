@@ -44,7 +44,7 @@ Adafruit_AMG88xx amg;
 ESP8266WebServer server(80);    //crée un objet "serveur" qui écoute les requêtes HTTP sur le port 80
 WebSocketsServer webSocket(81); //
 
-
+String tab_vide = "[0,0]";
 
 /* Pour Affichage web */
 const __FlashStringHelper *ws_html_1() //Page html
@@ -200,7 +200,7 @@ void setup(void) //initialisation
   server.on("/", handleRoot);
   server.on("/current", []() {
     String str;
-    server.send(200, "text/plain", get_current_values_str(str)); //envoi des premières valeurs
+    server.send(200, "text/plain", tab_vide); //envoi des premières valeurs
   });
 
   server.onNotFound(handleNotFound); //
@@ -297,7 +297,10 @@ void loop(void) //main
   if (now - temps_lecture_precedente > 100) //si pas de maj depuis 100ms
   {
     temps_lecture_precedente += 100;
-
+    // String str;
+    // get_current_values_str(str);
+    // webSocket.broadcastTXT(str);
+    // Serial.println(interpolation);
     webSocket.broadcastTXT(interpolation);
   }
 }
