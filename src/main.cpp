@@ -122,6 +122,8 @@ const __FlashStringHelper *ws_html_2()
            "    else{\n"
            "        aff = 0;\n"
            "        tds[i].innerHTML = data[i].toFixed(2);\n"
+           "    }\n"
+           "}\n"
            "</script>\n"
            "</br>"
            "<div><p class=\"gauche\">0°C</p><p class=\"droite\">40°C</p></div>\n"
