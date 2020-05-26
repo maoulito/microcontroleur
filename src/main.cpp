@@ -19,15 +19,10 @@
 #include <Wire.h>
 #include <Adafruit_AMG88xx.h>
 
-<<<<<<< HEAD
-//oui
-
-=======
->>>>>>> 68139187f35751bf3ce2de468883fa00ee00ee79
 /* CONSTANTES */
 
-const char *ssid = "90Drogou";     //nom du wifi auquel se connecter
-const char *password = "Apoxes29"; //son mot de passe
+const char *ssid = "Livebox-1EEA";                   //nom du wifi auquel se connecter
+const char *password = "E217C1E6AC898E074607032E16"; //son mot de passe
 
 uint16_t Tmin = 15; //valeurs supposées des températures extrèmes
 uint16_t Tmax = 40; // ici je mesure la T° de la pièce et de ma main.
@@ -61,42 +56,47 @@ const __FlashStringHelper *ws_html_1() //Page html
            "<title>thermo</title>\n"
            "<style>\n"
            "body {\n"
-           "    background-color: #777;\n"
+           "    background-color: #123;\n"
            "}\n"
            "table#tbl td {\n"
-           "    width: 25px;\n"
-           "    height: 25px;\n"
+           "    width: 32px;\n"
+           "    height: 32px;\n"
            "    border: 0px;\n"
-           "    cellspadding = 0;\n"
            "    text-align: center;\n"
            "}\n"
-          ".deg\n"
-          "{\n"
-          "  background-image: linear-gradient(to right, blue, green, yellow, red, purple);\n"
-          "  width: 80%;\n"
-          "  height: 20px;\n"
-          " margin: 0 auto;\n"
-          "}\n"
-          ".gauche\n"
-          "{\n"
-          "  float: left;\n"
-          "  color: blue;\n"
-          "}\n"
-          ".droite\n"
-          "{\n"
-          "  float: right;\n"
-          "  color: purple;\n"
-          "}\n"
+           ".deg\n"
+           "{\n"
+           "  background-image: linear-gradient(to right, blue, green, yellow, red, purple);\n"
+           "  width: 80%;\n"
+           "  height: 20px;\n"
+           " margin: 0 auto;\n"
+           "}\n"
+           ".gauche\n"
+           "{\n"
+           "  float: left;\n"
+           "  color: blue;\n"
+           "}\n"
+           ".droite\n"
+           "{\n"
+           "  float: right;\n"
+           "  color: purple;\n"
+           "}\n"
+           "th, td {\n"
+           "    padding : 0;\n"
+           "    font-size: 50%;\n"
+           "}\n"
+           "table {\n"
+           "border-collapse: collapse;\n"
+           "}\n"
            ".tablecenter{\n"
-           "  margin-left: auto \n"
-           "  margin-right: auto \n"
+           "  margin-left: auto; \n"
+           "  margin-right: auto; \n"
            "}\n"
            "</style>\n"
            "</head>\n"
            "<body>\n"
            "<table border id=\"tbl\" class=\"tablecenter\"></table>\n"
            "<script>\n"
-           "var aff = 0\n"
            "function bgcolor(t) {\n"
            "    if (t < 0) t = 0;\n"
            "    if (t > 30) t = 30;\n"
@@ -123,27 +123,15 @@ const __FlashStringHelper *ws_html_2()
   return F(":81/');\n"
            "connection.onmessage = function(e) {\n"
            "    const data = JSON.parse(e.data);\n"
-           "    tds[i].style.backgroundColor = bgcolor(data[i]);\n"
            "    for (var i = 0; i < 225; i++) {\n"
            "        tds[i].innerHTML = data[i].toFixed(2);\n"
            "        tds[i].style.backgroundColor = bgcolor(data[i]);\n"
            "    }\n"
            "};\n"
-           "function Degres(){\n"
-           "    if (aff=0){\n"
-           "        aff = 1;\n"
-           "    }\n"
-           "    else{\n"
-           "        aff = 0;\n"
-           "        tds[i].innerHTML = data[i].toFixed(2);\n"
-           "    }\n"
-           "}\n"
            "</script>\n"
-           "</br>"
+           "</br>\n"
            "<div><p class=\"gauche\">0°C</p><p class=\"droite\">40°C</p></div>\n"
            "<div class=\"deg\"></div>\n"
-           "</br>"
-           "<button onclick=\"Degres()\">Affichage des degrés</button>\n"
            "</body>\n"
            "</html>\n");
 }
@@ -271,28 +259,27 @@ void loop(void) //main
       temps_avant = t;   //reset du temps d'attente
     }
   }
-  
 
   // lecture images
   amg.readPixels(tableau_pixels);
 
-      // Pour interpoler 1 valeur entre chaque pixels donnés par la caméra
-      // Il faut créer 7 colonnes supplémentaires
+  // Pour interpoler 1 valeur entre chaque pixels donnés par la caméra
+  // Il faut créer 7 colonnes supplémentaires
 
-      //interpolation lignes
-      // interpolation des points entre chaque pixel-image sur les lignes
+  //interpolation lignes
+  // interpolation des points entre chaque pixel-image sur les lignes
   for (ligne = 0; ligne < 8; ligne++)
   {
     for (col = 0; col < 15; col++)
     {
       // récupère les pixels-image adjacents
-      av = col/2 + (ligne * 8);       // 2 entre chacun des huit
-      ap = (col/2) + 1 + (ligne * 8); // point suivant
+      av = col / 2 + (ligne * 8);       // 2 entre chacun des huit
+      ap = (col / 2) + 1 + (ligne * 8); // point suivant
       pixelMilieu = ((tableau_pixels[ap] - tableau_pixels[av]) / 2.0);
       // incrément (0-1)
       incr = col % 2;
       // Calcul de l'interpolation linéaire
-      val = (pixelMilieu  * incr) + tableau_pixels[av];
+      val = (pixelMilieu * incr) + tableau_pixels[av];
       // tableau_grandi[ligne][col] = val;
       tableau_grandi[(7 - ligne) * 2][col] = val;
     }
@@ -302,7 +289,7 @@ void loop(void) //main
   // et maintenant sur les colonnes en utilisant le tableau que l'on vient de remplir
   for (col = 0; col < 15; col++)
   {
-    for (ligne = 0; ligne < 15 ; ligne++)
+    for (ligne = 0; ligne < 15; ligne++)
     {
       // récupère la position des pixels-image adjacents
       av = (ligne / 2) * 2;
@@ -318,19 +305,19 @@ void loop(void) //main
   interpolation = "[";
   for (int i = 0; i < 15; i++) //lignes
   {
-    if(i!=0 || i!=14)
+    if (i != 0 || i != 14)
       interpolation += "\r\n";
-    for (int j = 0 ; j<15 ; j++){ //colonnes
-        
+    for (int j = 0; j < 15; j++)
+    { //colonnes
+
       interpolation += String(tableau_grandi[i][j]);
 
-      if (i!=14 || j!= 14) //sauf dernière valeur
+      if (i != 14 || j != 14)  //sauf dernière valeur
         interpolation += ", "; //entre chaque pixel
     }
   }
   interpolation += "\r\n]\r\n";
-  
-  
+
   static unsigned long temps_lecture_precedente = millis();
   unsigned long now = millis();
   if (now - temps_lecture_precedente > 100) //si pas de maj depuis 100ms
